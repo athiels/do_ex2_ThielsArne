@@ -1,0 +1,13 @@
+---
+# UpdateWebsite
+- hosts: webservers 
+  sudo: yes
+  tasks:
+  
+  - name: deploy website content
+    template: src=web-files/index.html.j2 dest=/usr/share/nginx/html/index.html
+
+  handlers:
+  
+  - name: restart nginx
+    service: name=nginx state=restarted
