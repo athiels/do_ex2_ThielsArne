@@ -1,9 +1,30 @@
 ---
 # UpdateWebsite
-- hosts: webservers 
+
+- hosts: webservers
   sudo: yes
-  tasks:
+  serial: 1
   
+  pre_tasks:
+
+  - name: disable server in haproxy
+    shell: echo "disable server episode46/{{ inventory_hostname }}" | socat stdio /var/lib/haproxy/stats
+    delegate_to: "{{ item }}"
+    with_items: groups.rp
+
+  tasks:
+     
+  - name: install nginx
+    apt: name=nginx state=installed
+
+  - name: write our nginx.conf
+    template: src=web-files/nginx.conf.j2 dest=/etc/nginx/nginx.conf
+    notify: restart nginx
+
+  - name: write our /etc/nginx/sites-available/default
+    template: src=web-files/default-site.j2 dest=/etc/nginx/sites-available/default
+    notify: restart nginx
+
   - name: deploy website content
     template: src=web-files/index.html.j2 dest=/usr/share/nginx/html/index.html
 
@@ -11,3 +32,11 @@
   
   - name: restart nginx
     service: name=nginx state=restarted
+
+  post_tasks:
+
+  - name: enable server in haproxy
+    shell: echo "enable server episode46/{{ inventory_hostname }}" | socat stdio /var/lib/haproxy/stats
+    delegate_to: "{{ item }}"
+    with_items: groups.rp
+
